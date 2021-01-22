@@ -25,9 +25,9 @@ type (
 		ResponseTopic          string
 		PayloadFormat          *byte
 		MessageExpiry          *uint32
-		SubscriptionIdentifier *uint32
+		SubscriptionIdentifier *int
 		TopicAlias             *uint16
-		User                   map[string]string
+		User                   UserProperties
 	}
 )
 
@@ -43,7 +43,7 @@ func (p *Publish) InitProperties(prop *packets.Properties) {
 		CorrelationData:        prop.CorrelationData,
 		TopicAlias:             prop.TopicAlias,
 		SubscriptionIdentifier: prop.SubscriptionIdentifier,
-		User:                   prop.User,
+		User:                   UserPropertiesFromPacketUser(prop.User),
 	}
 }
 
@@ -79,7 +79,7 @@ func (p *Publish) Packet() *packets.Publish {
 			CorrelationData:        p.Properties.CorrelationData,
 			TopicAlias:             p.Properties.TopicAlias,
 			SubscriptionIdentifier: p.Properties.SubscriptionIdentifier,
-			User:                   p.Properties.User,
+			User:                   p.Properties.User.ToPacketProperties(),
 		}
 	}
 
@@ -105,11 +105,14 @@ func (p *Publish) String() string {
 	if p.Properties.CorrelationData != nil {
 		fmt.Fprintf(&b, "CorrelationData: %v\n", p.Properties.CorrelationData)
 	}
+	if p.Properties.TopicAlias != nil {
+		fmt.Fprintf(&b, "TopicAlias: %d\n", p.Properties.TopicAlias)
+	}
 	if p.Properties.SubscriptionIdentifier != nil {
 		fmt.Fprintf(&b, "SubscriptionIdentifier: %v\n", p.Properties.SubscriptionIdentifier)
 	}
-	for k, v := range p.Properties.User {
-		fmt.Fprintf(&b, "User: %s : %s\n", k, v)
+	for _, v := range p.Properties.User {
+		fmt.Fprintf(&b, "User: %s : %s\n", v.Key, v.Value)
 	}
 	b.WriteString(string(p.Payload))
 

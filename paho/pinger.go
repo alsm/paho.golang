@@ -25,6 +25,8 @@ type PingFailHandler func(error)
 // Stop() is used to stop the Pinger
 // PingResp() is the function that is called by the Client when
 // a PingResponse is received
+// SetDebug() is used to pass in a Logger to be used to log debug
+// information, for example sharing a logger with the main client
 type Pinger interface {
 	Start(net.Conn, time.Duration)
 	Stop()
@@ -76,12 +78,14 @@ func (p *PingHandler) Start(c net.Conn, pt time.Duration) {
 			if time.Since(p.lastPing) >= pt {
 				//time to send a ping
 				if _, err := packets.NewControlPacket(packets.PINGREQ).WriteTo(p.conn); err != nil {
-					p.debug.Println("pingHandler sending ping request")
 					if p.pingFailHandler != nil {
 						p.pingFailHandler(err)
 					}
 					return
 				}
+				atomic.AddInt32(&p.pingOutstanding, 1)
+				p.lastPing = time.Now()
+				p.debug.Println("pingHandler sending ping request")
 			}
 		}
 	}
